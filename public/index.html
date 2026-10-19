@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>VR Room - Orquestrador Espacial AI (Meta Quest 3)</title>
+  <meta name="description" content="Simulador 3D e cliente WebXR em tempo real com controle por voz e inteligência artificial espacial para Meta Quest 3.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Canvas 3D Three.js Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Header & Status Bar -->
+  <header class="top-nav glass-panel">
+    <div class="brand">
+      <div class="brand-icon">🥽</div>
+      <div class="brand-text">
+        <h1>VR ROOM <span class="badge-gemini">GEMINI AI</span></h1>
+        <p class="subtitle">Spatial Orchestrator &middot; Meta Quest 3</p>
+      </div>
+    </div>
+
+    <div class="status-group">
+      <div class="status-pill" id="status-server">
+        <span class="status-dot online"></span>
+        <span class="status-label">BFF Conectado</span>
+      </div>
+      <div class="status-pill" id="status-objects">
+        <span class="status-icon">📦</span>
+        <span class="status-label" id="objects-count">0 objetos</span>
+      </div>
+      <button id="btn-toggle-inspector" class="btn-icon" title="Abrir Inspetor de Dados JSON">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 18 22 12 16 6"></polyline>
+          <polyline points="8 6 2 12 8 18"></polyline>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Retícula / Centro da visão -->
+  <div id="crosshair"></div>
+
+  <!-- HUD de Feedback Espacial (ao vivo) -->
+  <div id="spatial-hud" class="spatial-hud">
+    <div class="hud-item"><span class="hud-label">CAM POS:</span> <span id="hud-cam-pos">0.0, 1.7, 0.0</span></div>
+    <div class="hud-item"><span class="hud-label">YAW:</span> <span id="hud-cam-yaw">0°</span></div>
+  </div>
+
+  <!-- Central Voice & Command Hub -->
+  <main class="bottom-control-hub">
+    <!-- Feedback de fala / transcrição em tempo real -->
+    <div class="transcript-balloon glass-panel" id="transcript-balloon">
+      <div class="balloon-header">
+        <span class="pulse-indicator" id="pulse-indicator"></span>
+        <span class="transcript-state" id="transcript-state">Pressione o microfone ou digite um comando...</span>
+      </div>
+      <div class="transcript-text" id="transcript-text">"Coloque um cavalo a 3 metros na minha frente"</div>
+    </div>
+
+    <!-- Barra de Ações Rápidas (Chips de Sugestão) -->
+    <div class="prompt-chips-container">
+      <button class="chip" data-prompt="Coloque um cavalo a 3 metros na minha frente">🐎 Cavalo a 3m</button>
+      <button class="chip" data-prompt="Crie um cubo dourado a 2 metros à minha esquerda">📦 Cubo à esquerda</button>
+      <button class="chip" data-prompt="Coloque uma fogueira no chão a 2 metros">🔥 Fogueira</button>
+      <button class="chip" data-prompt="Crie um cercado de madeira ao meu redor">🪵 Cercado</button>
+      <button class="chip" data-prompt="Mude a iluminação para noite cyberpunk">🌙 Noite Cyberpunk</button>
+      <button class="chip" data-prompt="Remova todos os objetos e limpe a cena">🧹 Limpar Cena</button>
+    </div>
+
+    <!-- Barra de Controle: Microfone + Input de Texto + Botão Enviar -->
+    <div class="control-bar glass-panel">
+      <!-- Botão de Microfone Principal -->
+      <button id="btn-mic" class="btn-mic" title="Falar comando de voz">
+        <div class="mic-glow"></div>
+        <svg class="mic-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+      </button>
+
+      <!-- Campo de Entrada Manual de Texto -->
+      <form id="command-form" class="command-form">
+        <input 
+          type="text" 
+          id="command-input" 
+          placeholder="Fale no microfone ou digite um comando de cena..." 
+          autocomplete="off"
+        />
+        <button type="submit" id="btn-send" class="btn-send" title="Enviar comando">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Botão WebXR (injetado dinamicamente pelo Three.js) -->
+      <div id="vr-button-slot"></div>
+    </div>
+  </main>
+
+  <!-- Painel Lateral: Inspetor de Comandos e IA (Gaveta) -->
+  <aside id="inspector-drawer" class="inspector-drawer glass-panel">
+    <div class="drawer-header">
+      <h3>🔍 Inspetor de Orquestração Espacial</h3>
+      <button id="btn-close-inspector" class="btn-close">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="inspector-section">
+        <h4>Objetos Ativos na Cena</h4>
+        <div id="active-objects-list" class="objects-list">
+          <p class="empty-hint">Nenhum objeto instanciado ainda.</p>
+        </div>
+      </div>
+
+      <div class="inspector-section">
+        <h4>Último Array JSON do Gemini</h4>
+        <pre id="json-viewer" class="json-viewer">// Os comandos gerados aparecerão aqui em tempo real...</pre>
+      </div>
+
+      <div class="inspector-section">
+        <h4>Ambiente & Iluminação</h4>
+        <div class="env-controls">
+          <label>Céu/Preset:</label>
+          <select id="select-preset">
+            <option value="studio">Studio Minimalista</option>
+            <option value="sunset">Pôr do Sol Dourado</option>
+            <option value="night">Noite Estrelada</option>
+            <option value="cyberpunk">Cyberpunk Neon</option>
+            <option value="desert">Deserto Aberto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Main JavaScript App Entrypoint -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

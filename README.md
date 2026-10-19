@@ -54,38 +54,31 @@ flowchart LR
 ## 📍 Onde Paramos & Estado Atual
 
 ### ✅ O que já está pronto e funcional:
-- [x] **Backend BFF (Node.js + Express 5)** configurado e modular.
-- [x] **Integração com o SDK oficial `@google/genai` (v2)** conectada ao modelo `gemini-2.5-flash`.
-- [x] **Engenharia de Prompt Espacial**: System instructions afinadas para transformar linguagem natural em um contrato estrito de dados JSON.
-- [x] **Endpoint de Comando de Cena**: `POST /api/v1/scene/command` recebendo transcrição, coordenadas e rotação do jogador.
-- [x] **Gramática de Comandos Padronizada**: Suporte a operações de ciclo de vida (`spawn`, `modify`, `remove`), ambiente (`set_environment`, `set_lighting`) e limpeza (`clear_scene`).
-- [x] **Cálculo Relativo ao Usuário**: Suporte a posicionamento relativo à visão do usuário (`front`, `back`, `left`, `right`, distâncias e alturas).
+- [x] **Backend BFF (Node.js + Express 5)** configurado, modular e servindo API + Frontend.
+- [x] **Integração com Gemini API com Fallback Multi-Modelo**: Alta disponibilidade testada (`gemini-3.5-flash`, `gemini-3.7-flash`, etc.) prevenindo indisponibilidades 503.
+- [x] **Memória Contextual de Cena (Scene Graph)**: Envio de `existing_objects` ao Gemini permitindo comandos contextuais contínuos (*"Aumente o cavalo em 2x"*, *"Remova o cavalo"*).
+- [x] **Cliente 3D & WebXR no Navegador (`/public`)**:
+  - Renderizador Three.js com PBR, sombras dinâmicas e controle de câmera.
+  - Reconhecimento de voz em português via **Web Speech API** com visualizador de pulso de áudio.
+  - Suporte a **WebXR** (`VRButton`) nativo para imersão no navegador do Meta Quest 3.
+  - Fábrica de assets procedurais 3D (`animal_horse`, `prop_cube`, `prop_sphere`, `prop_campfire`, `env_corral`, `prop_tree`).
+  - Inspetor lateral de JSON e controle de presets ambientais em tempo real.
+- [x] **Script de Integração Unity C# (`/unity/VRSceneManager.cs`)**: Gerenciador de cena pronto para importação em projetos nativos do Meta Quest 3 na Unity.
 - [x] **Segurança do Repositório**: `.gitignore` robusto protegendo credenciais e API keys sensíveis.
 
 ---
 
 ### ⏸️ Ponto de Parada Atual:
-> **O BFF está 100% pronto e testado localmente para orquestrar comandos via API REST.**  
-> O ponto atual é a **construção e conexão do cliente VR** e a evolução da **memória de estado da cena**.
+> **O ecossistema completo (BFF com memória + Cliente 3D WebXR no navegador + Script Unity) está rodando e validado.**  
+> Você pode abrir `http://localhost:3000` agora mesmo para usar por voz no PC ou no Meta Quest Browser!
 
 ---
 
 ### 🔜 Próximos Passos (Roadmap):
-
-#### 1. Integração com o Cliente VR (Meta Quest 3 / Unity ou WebXR)
-- [ ] **Captura de Voz & STT no Headset**: Integrar reconhecimento de fala (Whisper local, Meta Voice SDK ou Web Speech API) para capturar o áudio e converter em texto diretamente no headset.
-- [ ] **Dispatcher de Rede no Headset**: Script em C# (Unity) ou TypeScript (Three.js/Babylon.js) para despachar a requisição `POST` contendo a posição do jogador (`Camera.main.transform.position`) e rotação Y (`Camera.main.transform.eulerAngles.y`).
-- [ ] **Interpretador de Comandos 3D**:
-  - Catálogo de Assets (Prefabs vinculados aos `asset_id` como `animal_horse`, `env_corral`, `prop_cube`).
-  - Cálculo matemático de translação no espaço 3D com base nos vetores `front`/`back`/`left`/`right` relativos à rotação do headset.
-  - Gerenciador de instâncias para controlar objetos criados por `instance_id`.
-
-#### 2. Evolução do BFF
-- [ ] **Memória de Estado da Cena (Scene Graph / World State)**:
-  - Enviar no payload para o Gemini a lista de objetos atualmente instanciados na cena.
-  - Permitir comandos contextuais avançados, ex: *"Faça aquele cavalo que você colocou olhar para a fogueira"* ou *"Mude a cor do cubo para azul"*.
-- [ ] **Validação com Schema Zod**: Tipagem e validação em tempo de execução dos payloads de entrada e saída.
-- [ ] **Comunicação Bidirecional (WebSockets / WebRTC)**: Para reduzir latência e transmitir eventos em tempo real.
+- [ ] Importar `VRSceneManager.cs` em um projeto Unity completo com Meta XR SDK caso deseje compilar APK nativo.
+- [ ] Adicionar suporte a WebSockets para sincronização multiplayer de múltiplos headsets na mesma sala.
+- [ ] Integrar Text-to-Speech (TTS) com voz do Gemini para o ambiente responder ao usuário falando de volta.
+- [ ] Validação com Schema Zod dos payloads de entrada e saída.
 
 ---
 
